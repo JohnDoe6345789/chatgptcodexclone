@@ -1,4 +1,9 @@
-"""Backend helper: download model and start llama-cpp server."""
+"""Backend helper: download model and start a local server.
+
+This tries to use ``llama_cpp.server`` if it is installed.
+If the module is missing, the script will still download the
+model and then print clear instructions instead of crashing.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +20,13 @@ HF_FILE: Final[str] = "deepseek-coder-6.7b-instruct.Q4_K_M.gguf"
 DEFAULT_PORT: Final[int] = 1234
 
 
+try:  # pragma: no cover - presence of backend is environment-specific
+    import llama_cpp.server as _llama_server  # type: ignore[unused-ignore]
+    HAVE_LLAMA_CPP = True
+except Exception:  # pragma: no cover - import error path
+    HAVE_LLAMA_CPP = False
+
+
 def _project_root() -> Path:
     """Return the project root folder."""
     here = Path(__file__).resolve()
@@ -29,14 +41,14 @@ def _models_dir() -> Path:
     return directory
 
 
-def _local_model_path() -> Path:
+def local_model_path() -> Path:
     """Return the expected local model path."""
     return _models_dir() / HF_FILE
 
 
 def download_model() -> Path:
     """Ensure the GGUF model exists locally and return its path."""
-    path = _local_model_path()
+    path = local_model_path()
     if path.exists():
         return path
     local_path = hf_hub_download(
@@ -48,9 +60,34 @@ def download_model() -> Path:
     return Path(local_path)
 
 
+def _print_no_llama_message(model_path: Path) -> None:
+    """Explain what to do if llama-cpp is not available."""
+    lines = [
+        "llama-cpp-python is not installed; cannot start built-in backend.",
+        "",
+        "The model has been downloaded to:",
+        f"  {model_path}",
+        "",
+        "You now have two main options:",
+        "  1) Install llama-cpp-python with a C++ toolchain and retry, or",
+        "  2) Use another local server (LM Studio, llama.cpp binary, etc.)",
+        "     pointing at the GGUF path above.",
+        "",
+        "Example llama.cpp command (if you have `llama-server`):",
+        "  llama-server --model "{model_path}" --host 127.0.0.1 --port 1234 \",
+        "      --alias local-coder --ctx-size 8192",
+        "",
+        "Then run:  python -m codex_clone.repl",
+    ]
+    print("\n".join(lines), file=sys.stderr)
+
+
 def run_server(port: int = DEFAULT_PORT) -> None:
     """Download the model if needed and start llama-cpp server."""
     model_path = download_model()
+    if not HAVE_LLAMA_CPP:
+        _print_no_llama_message(model_path)
+        sys.exit(1)
     cmd = [
         sys.executable,
         "-m",

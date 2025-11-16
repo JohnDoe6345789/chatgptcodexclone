@@ -40,14 +40,14 @@ class ApiTests(unittest.TestCase):
                 {"message": {"role": "assistant", "content": "ok"}},
             ],
         }
-        data = json.dumps(body).encode("utf-8"))
+        data = json.dumps(body).encode("utf-8")
         text = _parse_response(data)
         self.assertEqual(text, "ok")
 
 
     def test_parse_response_raises_on_empty_choices(self) -> None:
         body = {"choices": []}
-        data = json.dumps(body).encode("utf-8"))
+        data = json.dumps(body).encode("utf-8")
         with self.assertRaises(CodexError):
             _parse_response(data)
 

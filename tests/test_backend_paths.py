@@ -12,7 +12,7 @@ class BackendPathTests(unittest.TestCase):
     """Verify model path helpers behave sensibly."""
 
     def test_local_model_path_ends_with_filename(self) -> None:
-        path = backend._local_model_path()
+        path = backend.local_model_path()
         self.assertIsInstance(path, Path)
         self.assertTrue(str(path).endswith(backend.HF_FILE))
 

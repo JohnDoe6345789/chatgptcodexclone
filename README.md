@@ -1,47 +1,47 @@
-# Local Codex Clone (CLI + backend)
+# Local Codex Clone (smart backend)
 
-Tiny terminal chat client plus a helper backend launcher that
-runs DeepSeek Coder 6.7B Instruct (GGUF) locally via llama-cpp.
+This version adds safer, "smart" backend handling:
 
-You get a ChatGPT/Codex-style loop in your shell, but the model
-and all requests stay on your own machine.
+- Downloads DeepSeek Coder 6.7B Instruct (GGUF) via `huggingface_hub`.
+- *Tries* to start `llama_cpp.server` **if available**.
+- If `llama-cpp-python` is missing or fails to build, it:
+  - Still downloads the model,
+  - Prints the exact GGUF path,
+  - Explains how to run an external server instead,
+  - Exits cleanly instead of crashing with a traceback.
 
-## What you get
+The chat REPL is unchanged: it just talks to any
+OpenAI-compatible endpoint (LM Studio, llama.cpp, etc.).
 
-- `python -m codex_clone.backend`
-  - Downloads a quantised DeepSeek Coder 6.7B Instruct GGUF
-    from Hugging Face (Q4_K_M via TheBloke).
-  - Starts `llama_cpp.server` on `http://127.0.0.1:1234/v1`
-    with model alias `local-coder`.
-- `python -m codex_clone.repl`
-  - Simple chat REPL that talks to that server using an
-    OpenAI-compatible JSON API.
-
-## Quick start
+## Quick start (basic)
 
 1. Create a virtualenv and install:
 
    ```bash
-   cd codex_clone_v2
+   cd codex_clone_smart
    python -m venv .venv
-   . .venv/bin/activate        # On Windows: .venv\\Scripts\\activate
+   . .venv/bin/activate        # On Windows: .venv\Scripts\activate
    pip install -e .
    ```
 
-2. Install runtime deps for the backend:
+2. Install an OpenAI-compatible backend by **one** of these options:
 
-   ```bash
-   pip install "llama-cpp-python[server]" huggingface_hub
-   ```
+   - (A) `llama-cpp-python[server]` with a C++ toolchain (harder on Windows),
+   - (B) LM Studio / other GUI that exposes `/v1/chat/completions`,
+   - (C) Prebuilt `llama-server` binary from llama.cpp.
 
-3. Start the backend in one terminal:
+3. To let the helper try to start `llama_cpp.server` and at least
+   download the model, run:
 
    ```bash
    python -m codex_clone.backend
    ```
 
-   First run will download one GGUF file into `./models`.
-   After that it just starts the server.
+   - If `llama-cpp-python` is installed and working, this will
+     start `llama_cpp.server` on `127.0.0.1:1234` with alias
+     `local-coder`.
+   - If not, you will get a short message describing what to do
+     and where the GGUF model lives.
 
 4. In another terminal, run the REPL:
 
@@ -49,24 +49,24 @@ and all requests stay on your own machine.
    python -m codex_clone.repl
    ```
 
-   Type your coding questions, press Enter. Use an empty line
-   to send the current block. Type `exit` or `quit` to leave.
+   The REPL talks to `http://localhost:1234/v1/chat/completions`
+   by default, but you can point it anywhere via env vars.
 
-## Scripts
-
-For convenience there are helper scripts that do the above:
+## Helper scripts
 
 - `run_backend.sh` / `run_backend.bat`
+
   - Create `.venv` if needed.
-  - Install required packages.
-  - Start the llama-cpp backend.
+  - Install this package.
+  - *Attempt* to install `llama-cpp-python[server]`, but do not
+    treat failure as fatal.
+  - Run `python -m codex_clone.backend`.
 
 - `run_codex_clone.sh` / `run_codex_clone.bat`
+
   - Re-use `.venv` and drop you into the REPL.
 
-## Configuration
-
-The REPL reads these environment variables:
+## Environment variables (REPL)
 
 - `CODEX_BASE_URL` (default: `http://localhost:1234`)
 - `CODEX_API_KEY` (not used for local server)

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codex-clone"
-version = "0.2.0"
-description = "Tiny local ChatGPT/Codex-style coding assistant CLI + backend"
+version = "0.3.0"
+description = "Tiny local ChatGPT/Codex-style coding assistant CLI + smart backend"
 authors = [{ name = "Local User" }]
 requires-python = ">=3.10"
 dependencies = [
